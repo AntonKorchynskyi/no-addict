@@ -1,10 +1,3 @@
-// await chrome.storage.local.set({
-//   rules: [
-//     { id: "1", type: "domain", value: "twitter.com", enabled: true },
-//     { id: "2", type: "url", value: "https://example.com/path", enabled: false },
-//   ],
-// });
-
 const ruleList = document.getElementById("ruleList");
 const form = document.querySelector("form");
 const input = document.getElementById("ruleInput");

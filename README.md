@@ -17,26 +17,26 @@ The extension focuses on simplicity, persistence, and reliability, allowing user
 
 ### Rule Management
 
-- [ ] Add new blocked rule from user input
-- [ ] Automatically detect domain vs full URL
-- [ ] Prevent duplicate rules
+- [x] Add new blocked rule from user input
+- [x] Automatically detect domain vs full URL
+- [x] Prevent duplicate rules
 - [ ] Enable / disable a rule using a toggle switch
 - [ ] Delete a blocked rule
-- [ ] Persist rule state across browser restarts
+- [x] Persist rule state across browser restarts
 
 ### Page Blocking
 
-- [ ] Load blocked rules in content script
-- [ ] Match current page against enabled rules
-- [ ] Block pages by removing or replacing page content
-- [ ] Ensure blocking runs before page content loads
+- [x] Load blocked rules in content script
+- [x] Match current page against enabled rules
+- [x] Block pages by removing or replacing page content
+- [x] Ensure blocking runs before page content loads
 
 ### Reliability & Edge Cases
 
-- [ ] Handle `www` and non-`www` domains correctly
+- [x] Handle `www` and non-`www` domains correctly
 - [ ] Ignore disabled rules
-- [ ] Safely handle empty rule lists
-- [ ] Support long URLs without errors
+- [x] Safely handle empty rule lists
+- [x] Support long URLs without errors
 
 ### Optional Enhancements
 
@@ -44,3 +44,5 @@ The extension focuses on simplicity, persistence, and reliability, allowing user
 - [ ] Temporary disable all rules
 - [ ] Import / export blocked rules
 - [ ] Confirmation before deleting a rule
+- [ ] Get rid of flashes before page is blocked
+- [ ] deal with SPAs
