@@ -6,6 +6,16 @@ The extension focuses on simplicity, persistence, and reliability, allowing user
 
 ---
 
+## Screenshots
+
+![Light Mode](assets/light-mode-screenshot.jpg)
+_light mode_
+
+![Dark Mode](assets/dark-mode-screenshot.jpg)
+_dark mode_
+
+---
+
 ## Development Tasks
 
 ### Core Functionality
