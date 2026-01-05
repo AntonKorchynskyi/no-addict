@@ -1,6 +1,6 @@
 // rule structure:
 // {
-//   id: string,              // unique
+//   id: string,              // uuid - unique
 //   type: "domain" | "url",
 //   value: string,           // normalized
 //   enabled: boolean
@@ -10,6 +10,12 @@ const ruleList = document.getElementById("ruleList");
 const form = document.querySelector("form");
 const input = document.getElementById("ruleInput");
 const statusPara = document.getElementById("status");
+const themeToggle = document.getElementById("themeToggle");
+
+const THEME_KEY = "theme";
+const DEFAULT_THEME = "light";
+
+await initTheme();
 
 // load rule list
 await render();
@@ -31,11 +37,18 @@ form.addEventListener("submit", async (e) => {
     const addResult = await addToStorage(result.rule);
     if (addResult) {
       await render();
-      await recheckActiveTab();
+      await reloadActiveTab();
       statusPara.textContent = "Successfully added!";
       input.value = "";
     }
   }
+});
+
+themeToggle.addEventListener("click", async () => {
+  const nextTheme =
+    document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+  await chrome.storage.local.set({ [THEME_KEY]: nextTheme });
+  applyTheme(nextTheme);
 });
 
 // One handler for both delete + switch (event delegation)
@@ -89,28 +102,9 @@ ruleList.addEventListener("click", async (e) => {
 
     await render();
 
-    // If we just enabled it -> block immediately via message
-    // If we just disabled it -> reload to restore original page
-    if (newEnabled) {
-      await recheckActiveTab();
-    } else {
-      await reloadActiveTab();
-    }
+    await reloadActiveTab();
   }
 });
-
-// if current tab is active then block it (no reload)
-async function recheckActiveTab() {
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  if (!tab?.id) return;
-
-  try {
-    await chrome.tabs.sendMessage(tab.id, { action: "recheck" });
-  } catch {
-    // No content script in this tab (restricted page, chrome://, web store, etc.)
-    // Safe to ignore.
-  }
-}
 
 // if current tab is active then unblock it (reload)
 async function reloadActiveTab() {
@@ -153,6 +147,17 @@ async function render() {
       )
       .join("");
   }
+}
+
+async function initTheme() {
+  const { [THEME_KEY]: storedTheme } = await chrome.storage.local.get({
+    [THEME_KEY]: DEFAULT_THEME,
+  });
+  applyTheme(storedTheme);
+}
+
+function applyTheme(theme) {
+  document.documentElement.dataset.theme = theme;
 }
 
 // add to chrome storage

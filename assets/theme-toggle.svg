@@ -1,0 +1,17 @@
+<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <clipPath id="half-moon">
+      <rect x="16" y="2" width="14" height="28" />
+    </clipPath>
+  </defs>
+  <circle cx="16" cy="16" r="14" fill="#e5e7eb" />
+  <circle cx="16" cy="16" r="14" fill="#ffffff" clip-path="url(#half-moon)" />
+  <circle
+    cx="16"
+    cy="16"
+    r="14"
+    fill="none"
+    stroke="#9ca3af"
+    stroke-width="2"
+  />
+</svg>

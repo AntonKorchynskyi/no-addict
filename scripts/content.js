@@ -1,74 +1,110 @@
 shouldBlock();
 
-// listens to extension code, so that if current page was chosen to be the blocked one, it will be blocked
 chrome.runtime.onMessage.addListener((message) => {
   if (message?.action === "recheck") shouldBlock();
 });
 
-// replaces page's html body
-function blockPage(rule) {
-  if (document.body) {
-    document.body.innerHTML = `<div><h1>No Addiction</h1><p>This page's content was replaced by No Addict extension</p><p>Matched URL: ${rule.value}</p></div>`;
-  } else {
-    document.addEventListener(
-      "DOMContentLoaded",
-      () => {
-        blockPage(rule);
-      },
-      { once: true }
-    );
-  }
+// --- Blocking helpers ---
+
+const BLOCK_MARKER_ID = "noaddict-blocked-root";
+let observer = null;
+let stopTimer = null;
+
+function ensureBodyReady(cb) {
+  if (document.body) return cb();
+  // Wait until body exists (earlier than DOMContentLoaded in many cases)
+  new MutationObserver((_, obs) => {
+    if (document.body) {
+      obs.disconnect();
+      cb();
+    }
+  }).observe(document.documentElement, { childList: true, subtree: true });
 }
 
-// check if url needs to be blocked
-async function shouldBlock() {
-  let link = window.location.href;
-  let linkObj = new URL(link);
+function applyBlock(rule) {
+  ensureBodyReady(() => {
+    // Idempotent: if we already blocked, don't rebuild again
+    if (document.getElementById(BLOCK_MARKER_ID)) return;
 
-  let rules = await getRules();
+    document.body.innerHTML = `
+      <div id="${BLOCK_MARKER_ID}" style="padding:24px;font-family:system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;">
+        <h1 style="margin:0 0 8px 0;">No Addict</h1>
+        <p style="margin:0 0 8px 0;">This page's content was replaced by No Addict extension.</p>
+        <p style="margin:0;color:#666;">Matched rule: ${rule.value}</p>
+      </div>
+    `;
 
-  // save hostname and also clean it
-  let currentHost = linkObj.hostname.toLowerCase().replace(/^www\./, "");
+    // Start "fight back" observer so the site can't re-render over us
+    startBlockObserver(rule);
+  });
+}
 
-  let pathname = linkObj.pathname;
+function startBlockObserver(rule) {
+  // Clear any previous observer/timers
+  if (observer) observer.disconnect();
+  if (stopTimer) clearTimeout(stopTimer);
 
-  // deal with trailing /
-  if (linkObj.pathname !== "/") {
-    pathname = pathname.replace(/\/+$/, "");
-  }
-
-  const currentUrlValue = linkObj.origin + pathname + linkObj.search;
-
-  let matchedRule = rules.find((rule) => {
-    // check if rule is enabled
-    if (rule.enabled === true) {
-      // domain
-      if (rule.type === "domain") {
-        if (
-          currentHost === rule.value ||
-          currentHost.endsWith("." + rule.value)
-        ) {
-          return true;
-        }
-        // rule
-      } else if (rule.type === "url") {
-        if (
-          currentUrlValue === rule.value ||
-          currentUrlValue.startsWith(rule.value + "/") ||
-          currentUrlValue.startsWith(rule.value + "?")
-        ) {
-          return true;
-        }
-      }
+  observer = new MutationObserver(() => {
+    // If site replaces the DOM, re-apply the block
+    // But keep it cheap: only reapply if our marker is missing
+    if (!document.getElementById(BLOCK_MARKER_ID)) {
+      // This will recreate our blocked body and restart observer
+      applyBlock(rule);
     }
   });
 
+  // Watch for DOM changes that SPAs do during hydration/render
+  observer.observe(document.documentElement, {
+    childList: true,
+    subtree: true,
+  });
+
+  // Stop after a short window to avoid running forever
+  stopTimer = setTimeout(() => {
+    if (observer) observer.disconnect();
+    observer = null;
+    stopTimer = null;
+  }, 2000); // 2 seconds is usually enough
+}
+
+// --- Matching logic ---
+
+async function shouldBlock() {
+  const linkObj = new URL(window.location.href);
+  const rules = await getRules();
+
+  const currentHost = linkObj.hostname.toLowerCase().replace(/^www\./, "");
+
+  let pathname = linkObj.pathname;
+  if (pathname !== "/") pathname = pathname.replace(/\/+$/, "");
+
+  const currentUrlValue = linkObj.origin + pathname + linkObj.search;
+
+  const matchedRule = rules.find((rule) => {
+    if (!rule.enabled) return false;
+
+    if (rule.type === "domain") {
+      return (
+        currentHost === rule.value || currentHost.endsWith("." + rule.value)
+      );
+    }
+
+    if (rule.type === "url") {
+      return (
+        currentUrlValue === rule.value ||
+        currentUrlValue.startsWith(rule.value + "/") ||
+        currentUrlValue.startsWith(rule.value + "?")
+      );
+    }
+
+    return false;
+  });
+
   if (matchedRule) {
-    blockPage(matchedRule);
+    applyBlock(matchedRule);
   }
 }
 
-// get rules from chrome storage
 async function getRules() {
   const { rules } = await chrome.storage.local.get({ rules: [] });
   return rules;

@@ -40,9 +40,8 @@ The extension focuses on simplicity, persistence, and reliability, allowing user
 
 ### Optional Enhancements
 
-- [ ] Dark mode support
+- [x] Dark mode support
 - [ ] Temporary disable all rules
 - [ ] Import / export blocked rules
 - [ ] Confirmation before deleting a rule
-- [ ] Get rid of flashes before page is blocked
-- [ ] Deal with SPAs
+- [x] Deal with SPAs
