@@ -9,7 +9,7 @@ The extension focuses on simplicity, persistence, and reliability, allowing user
 ## Screenshots
 
 <p align="center">
-  <img src="assets/light-mode-screenshot.jpg" alt="Light Mode" width="600">
+  <img src="assets/light-mode-screenshot.jpg" alt="Light Mode" width="400">
   <br>
   <em>light mode</em>
 </p>
@@ -17,7 +17,7 @@ The extension focuses on simplicity, persistence, and reliability, allowing user
 <br>
 
 <p align="center">
-  <img src="assets/dark-mode-screenshot.jpg" alt="Dark Mode" width="600">
+  <img src="assets/dark-mode-screenshot.jpg" alt="Dark Mode" width="400">
   <br>
   <em>dark mode</em>
 </p>
