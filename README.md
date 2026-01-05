@@ -8,11 +8,19 @@ The extension focuses on simplicity, persistence, and reliability, allowing user
 
 ## Screenshots
 
-![Light Mode](assets/light-mode-screenshot.jpg)
-_light mode_
+<p align="center">
+  <img src="assets/light-mode-screenshot.jpg" alt="Light Mode" width="600">
+  <br>
+  <em>light mode</em>
+</p>
 
-![Dark Mode](assets/dark-mode-screenshot.jpg)
-_dark mode_
+<br>
+
+<p align="center">
+  <img src="assets/dark-mode-screenshot.jpg" alt="Dark Mode" width="600">
+  <br>
+  <em>dark mode</em>
+</p>
 
 ---
 
