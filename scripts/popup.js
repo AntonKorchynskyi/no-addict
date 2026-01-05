@@ -1,9 +1,18 @@
+// rule structure:
+// {
+//   id: string,              // unique
+//   type: "domain" | "url",
+//   value: string,           // normalized
+//   enabled: boolean
+// }
+
 const ruleList = document.getElementById("ruleList");
 const form = document.querySelector("form");
 const input = document.getElementById("ruleInput");
 const statusPara = document.getElementById("status");
 
-render();
+// load rule list
+await render();
 
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -22,11 +31,94 @@ form.addEventListener("submit", async (e) => {
     const addResult = await addToStorage(result.rule);
     if (addResult) {
       await render();
+      await recheckActiveTab();
       statusPara.textContent = "Successfully added!";
       input.value = "";
     }
   }
 });
+
+// One handler for both delete + switch (event delegation)
+ruleList.addEventListener("click", async (e) => {
+  const deleteBtn = e.target.closest(".delete-btn");
+  const switchBox = e.target.closest(".switch-box");
+
+  // If user clicked neither a delete button nor a switch, ignore
+  if (!deleteBtn && !switchBox) return;
+
+  const { rules } = await chrome.storage.local.get({ rules: [] });
+
+  // DELETE
+  if (deleteBtn) {
+    const id = deleteBtn.dataset.id;
+
+    // Find the rule being deleted (so we know if it was enabled)
+    const deletedRule = rules.find((r) => r.id === id);
+    if (!deletedRule) return; // safety
+
+    // Remove it
+    const newRules = rules.filter((r) => r.id !== id);
+    await chrome.storage.local.set({ rules: newRules });
+
+    await render();
+
+    // If it WAS enabled, we might have blocked the current page -> reload to restore
+    if (deletedRule.enabled) {
+      await reloadActiveTab();
+    }
+
+    return;
+  }
+
+  // TOGGLE (switch)
+  if (switchBox) {
+    const id = switchBox.dataset.id;
+
+    // Find current rule so we know its old state
+    const currentRule = rules.find((r) => r.id === id);
+    if (!currentRule) return; // safety
+
+    const newEnabled = !currentRule.enabled;
+
+    // Update rule in-place (immutably) while keeping the order
+    const newRules = rules.map((r) =>
+      r.id === id ? { ...r, enabled: newEnabled } : r
+    );
+
+    await chrome.storage.local.set({ rules: newRules });
+
+    await render();
+
+    // If we just enabled it -> block immediately via message
+    // If we just disabled it -> reload to restore original page
+    if (newEnabled) {
+      await recheckActiveTab();
+    } else {
+      await reloadActiveTab();
+    }
+  }
+});
+
+// if current tab is active then block it (no reload)
+async function recheckActiveTab() {
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (!tab?.id) return;
+
+  try {
+    await chrome.tabs.sendMessage(tab.id, { action: "recheck" });
+  } catch {
+    // No content script in this tab (restricted page, chrome://, web store, etc.)
+    // Safe to ignore.
+  }
+}
+
+// if current tab is active then unblock it (reload)
+async function reloadActiveTab() {
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (!tab?.id) return;
+
+  chrome.tabs.reload(tab.id);
+}
 
 // output rule list
 async function render() {
@@ -45,13 +137,17 @@ async function render() {
 
         <div class="rule-mid">
           <label class="switch">
-            <input type="checkbox" ${rule.enabled ? "checked" : ""} />
+            <input type="checkbox" class="switch-box" data-id="${rule.id}" ${
+          rule.enabled ? "checked" : ""
+        } />
             <span class="slider"></span>
           </label>
           <span class="rule-type">${rule.type}</span>
         </div>
 
-        <button class="icon-btn" title="Delete">✕</button>
+        <button data-id="${
+          rule.id
+        }" class="delete-btn" title="Delete">✕</button>
       </li>
     `
       )
@@ -150,11 +246,3 @@ function validate(raw) {
     },
   };
 }
-
-// structure:
-// {
-//   id: string,              // unique
-//   type: "domain" | "url",
-//   value: string,           // normalized
-//   enabled: boolean
-// }

@@ -1,5 +1,11 @@
 shouldBlock();
 
+// listens to extension code, so that if current page was chosen to be the blocked one, it will be blocked
+chrome.runtime.onMessage.addListener((message) => {
+  if (message?.action === "recheck") shouldBlock();
+});
+
+// replaces page's html body
 function blockPage(rule) {
   if (document.body) {
     document.body.innerHTML = `<div><h1>No Addiction</h1><p>This page's content was replaced by No Addict extension</p><p>Matched URL: ${rule.value}</p></div>`;
