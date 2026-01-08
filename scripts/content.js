@@ -10,19 +10,16 @@ const BLOCK_MARKER_ID = "noaddict-blocked-root";
 let observer = null;
 let stopTimer = null;
 
-function ensureBodyReady(cb) {
-  if (document.body) return cb();
-  // Wait until body exists (earlier than DOMContentLoaded in many cases)
-  new MutationObserver((_, obs) => {
-    if (document.body) {
-      obs.disconnect();
-      cb();
-    }
-  }).observe(document.documentElement, { childList: true, subtree: true });
+function ensureDomContentLoaded(cb) {
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", cb, { once: true });
+    return;
+  }
+  cb();
 }
 
 function applyBlock(rule) {
-  ensureBodyReady(() => {
+  ensureDomContentLoaded(() => {
     // Idempotent: if we already blocked, don't rebuild again
     if (document.getElementById(BLOCK_MARKER_ID)) return;
 
