@@ -1,11 +1,3 @@
-// rule structure:
-// {
-//   id: string,              // uuid - unique
-//   type: "domain" | "url",
-//   value: string,           // normalized
-//   enabled: boolean
-// }
-
 const ruleList = document.getElementById("ruleList");
 const form = document.querySelector("form");
 const input = document.getElementById("ruleInput");

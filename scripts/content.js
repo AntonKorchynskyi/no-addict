@@ -4,8 +4,6 @@ chrome.runtime.onMessage.addListener((message) => {
   if (message?.action === "recheck") shouldBlock();
 });
 
-// --- Blocking helpers ---
-
 const BLOCK_MARKER_ID = "noaddict-blocked-root";
 let observer = null;
 let stopTimer = null;
@@ -20,18 +18,23 @@ function ensureDomContentLoaded(cb) {
 
 function applyBlock(rule) {
   ensureDomContentLoaded(() => {
-    // Idempotent: if we already blocked, don't rebuild again
     if (document.getElementById(BLOCK_MARKER_ID)) return;
 
+    document.body.classList.add("noaddict-blocked");
     document.body.innerHTML = `
-      <div id="${BLOCK_MARKER_ID}" style="padding:24px;font-family:system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;">
-        <h1 style="margin:0 0 8px 0;">No Addict</h1>
-        <p style="margin:0 0 8px 0;">This page's content was replaced by No Addict extension.</p>
-        <p style="margin:0;color:#666;">Matched rule: ${rule.value}</p>
+      <link rel="stylesheet" href="${chrome.runtime.getURL("popup.css")}" />
+      <div id="${BLOCK_MARKER_ID}" class="na-blocked">
+        <div class="na-blocked-card">
+          <h1 class="na-blocked-title">This page is blocked</h1>
+          <p class="na-blocked-copy">No Addict replaced this page so you can stay on track. You can adjust your rules from the extension popup.</p>
+          <div class="na-blocked-rule">
+            <span class="na-blocked-label">Matched rule: </span>
+            <span class="na-blocked-value">${rule.value}</span>
+          </div>
+        </div>
       </div>
     `;
 
-    // Start "fight back" observer so the site can't re-render over us
     startBlockObserver(rule);
   });
 }
@@ -43,9 +46,7 @@ function startBlockObserver(rule) {
 
   observer = new MutationObserver(() => {
     // If site replaces the DOM, re-apply the block
-    // But keep it cheap: only reapply if our marker is missing
     if (!document.getElementById(BLOCK_MARKER_ID)) {
-      // This will recreate our blocked body and restart observer
       applyBlock(rule);
     }
   });
@@ -61,10 +62,8 @@ function startBlockObserver(rule) {
     if (observer) observer.disconnect();
     observer = null;
     stopTimer = null;
-  }, 2000); // 2 seconds is usually enough
+  }, 2000);
 }
-
-// --- Matching logic ---
 
 async function shouldBlock() {
   const linkObj = new URL(window.location.href);
@@ -102,6 +101,7 @@ async function shouldBlock() {
   }
 }
 
+// get rules from chrome storage
 async function getRules() {
   const { rules } = await chrome.storage.local.get({ rules: [] });
   return rules;
