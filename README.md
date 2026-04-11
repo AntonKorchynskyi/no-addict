@@ -1,65 +1,112 @@
-# No Addict
+# no-addict
 
-**No Addict** is a lightweight Chrome extension that helps users reduce digital distraction by blocking access to selected websites. Users can add domains or specific URLs they want to avoid, enable or disable blocking as needed, and automatically prevent those pages from loading by clearing their content.
+**A minimal Chrome extension that blocks distracting websites so you can stay focused.**
 
-The extension focuses on simplicity, persistence, and reliability, allowing users to control their browsing habits without intrusive restrictions.
+Add a domain or URL, toggle it on, and No Addict replaces that page with a clean terminal-style screen — no popups, no nags, just a hard stop.
 
 ---
 
 ## Screenshots
 
 <p align="center">
-  <img src="assets/light-mode-screenshot.jpg" alt="Light Mode" width="400">
-  <br>
-  <em>light mode</em>
-</p>
-
-<br>
-
-<p align="center">
-  <img src="assets/dark-mode-screenshot.jpg" alt="Dark Mode" width="400">
-  <br>
-  <em>dark mode</em>
+  <img src="assets/light-mode-screenshot.jpg" alt="Popup — light theme" width="380">
+  &nbsp;&nbsp;
+  <img src="assets/dark-mode-screenshot.jpg" alt="Popup — dark theme" width="380">
 </p>
 
 ---
 
-## Development Tasks
+## Features
 
-### Core Functionality
+- **Block by domain or full URL** — `reddit.com` blocks the whole site; `https://reddit.com/r/all` blocks only that path
+- **www-aware** — `reddit.com` and `www.reddit.com` are treated identically
+- **Toggle without deleting** — disable a rule temporarily and re-enable it later
+- **SPA-resilient** — a MutationObserver re-applies the block after client-side navigation rewrites the DOM
+- **Theme-aware blocked page** — the full-page intercept screen inherits your chosen light or dark theme
+- **Persistent** — rules and theme preference survive browser restarts via `chrome.storage.local`
+- **No dependencies** — vanilla JS, no build step, no frameworks
 
-- [x] Set up Chrome Extension (Manifest V3)
-- [x] Create popup interface
-- [x] Persist blocked rules using `chrome.storage.local`
-- [x] Display list of blocked rules in popup
+---
 
-### Rule Management
+## Installation
 
-- [x] Add new blocked rule from user input
-- [x] Automatically detect domain vs full URL
-- [x] Prevent duplicate rules
-- [x] Enable / disable a rule using a toggle switch
-- [x] Delete a blocked rule
-- [x] Persist rule state across browser restarts
+Chrome Web Store distribution is not set up yet. Load it unpacked:
 
-### Page Blocking
+1. Clone or download this repository
+2. Open Chrome and go to `chrome://extensions`
+3. Enable **Developer mode** (top-right toggle)
+4. Click **Load unpacked** and select the repo folder
+5. Click the puzzle-piece icon in the toolbar and pin **No Addict**
 
-- [x] Load blocked rules in content script
-- [x] Match current page against enabled rules
-- [x] Block pages by removing or replacing page content
-- [x] Ensure blocking runs before page content loads
+---
 
-### Reliability & Edge Cases
+## Usage
 
-- [x] Handle `www` and non-`www` domains correctly
-- [x] Ignore disabled rules
-- [x] Safely handle empty rule lists
-- [x] Support long URLs without errors
+| Action | How |
+|--------|-----|
+| Block a domain | Type `reddit.com` → **Add** |
+| Block a specific page | Type the full URL → **Add** |
+| Pause a rule | Toggle the switch off |
+| Remove a rule | Click **rm** |
+| Switch theme | Click the `◐ / ◑` button |
 
-### Optional Enhancements
+---
 
-- [x] Dark mode support
-- [ ] Temporary disable all rules
-- [ ] Import / export blocked rules
-- [ ] Confirmation before deleting a rule
-- [x] Deal with SPAs
+## How it works
+
+```
+manifest.json
+  └─ content_scripts/content.js   runs at document_start on every page
+       └─ checks window.location against enabled rules in chrome.storage.local
+            └─ match found → replaces body.innerHTML with the blocked-page UI
+
+action/popup.html + popup.js      runs when the extension icon is clicked
+  └─ reads/writes rules in chrome.storage.local
+  └─ sends a "recheck" message to the active tab after any change
+```
+
+The content script runs **before** the page renders (`document_start`), so blocked pages never flash their content. A short-lived `MutationObserver` window handles SPAs that replace the DOM during hydration.
+
+---
+
+## Tech stack
+
+| | |
+|---|---|
+| Runtime | Chrome Extension Manifest V3 |
+| Language | Vanilla JavaScript (ES modules) |
+| Storage | `chrome.storage.local` |
+| Fonts | JetBrains Mono (bundled woff2, no network request) |
+| Build | None — load directly as unpacked extension |
+
+---
+
+## Project structure
+
+```
+no-addict/
+├── manifest.json
+├── popup.html
+├── popup.css
+├── assets/
+│   └── fonts/
+│       └── jetbrains-mono-latin.woff2
+└── scripts/
+    ├── popup.js
+    └── content.js
+```
+
+---
+
+## Roadmap
+
+- [ ] Temporary disable all rules (focus break timer)
+- [ ] Import / export rules as JSON
+- [ ] Confirmation dialog before deleting a rule
+- [ ] Keyboard shortcut to open popup
+
+---
+
+## License
+
+MIT

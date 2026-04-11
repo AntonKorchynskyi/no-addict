@@ -1,169 +1,153 @@
-const ruleList = document.getElementById("ruleList");
-const form = document.querySelector("form");
-const input = document.getElementById("ruleInput");
+const ruleList   = document.getElementById("ruleList");
+const form       = document.querySelector("form");
+const input      = document.getElementById("ruleInput");
 const statusPara = document.getElementById("status");
 const themeToggle = document.getElementById("themeToggle");
+const activeCountEl = document.getElementById("activeCount");
+const ruleCountEl   = document.getElementById("ruleCount");
+const versionEl     = document.getElementById("version");
 
-const THEME_KEY = "theme";
+const THEME_KEY    = "theme";
 const DEFAULT_THEME = "light";
 
+// Init
+versionEl.textContent = `v${chrome.runtime.getManifest().version}`;
 await initTheme();
-
-// load rule list
 await render();
 
+// ---- Form submit ----
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
-  const raw = input.value;
+  clearStatus();
 
-  // clean already existing text
-  statusPara.textContent = "";
+  const result = validate(input.value);
 
-  // validation
-  let result = validate(raw);
-
-  // render error or add to the list
-  if (result.ok === false) {
-    statusPara.textContent = result.error;
+  if (!result.ok) {
+    setStatus(result.error, "error");
   } else {
-    const addResult = await addToStorage(result.rule);
-    if (addResult) {
+    const added = await addToStorage(result.rule);
+    if (added) {
       await render();
       await reloadActiveTab();
-      statusPara.textContent = "Successfully added!";
+      setStatus("added", "ok");
       input.value = "";
     }
   }
 });
 
+// ---- Theme toggle ----
 themeToggle.addEventListener("click", async () => {
-  const nextTheme =
-    document.documentElement.dataset.theme === "dark" ? "light" : "dark";
-  await chrome.storage.local.set({ [THEME_KEY]: nextTheme });
-  applyTheme(nextTheme);
+  const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+  await chrome.storage.local.set({ [THEME_KEY]: next });
+  applyTheme(next);
 });
 
-// One handler for both delete + switch (event delegation)
+// ---- Rule list: delete + toggle (event delegation) ----
 ruleList.addEventListener("click", async (e) => {
   const deleteBtn = e.target.closest(".delete-btn");
   const switchBox = e.target.closest(".switch-box");
 
-  // If user clicked neither a delete button nor a switch, ignore
   if (!deleteBtn && !switchBox) return;
 
   const { rules } = await chrome.storage.local.get({ rules: [] });
 
-  // DELETE
   if (deleteBtn) {
     const id = deleteBtn.dataset.id;
+    const deleted = rules.find((r) => r.id === id);
+    if (!deleted) return;
 
-    // Find the rule being deleted (so we know if it was enabled)
-    const deletedRule = rules.find((r) => r.id === id);
-    if (!deletedRule) return; // safety
-
-    // Remove it
-    const newRules = rules.filter((r) => r.id !== id);
-    await chrome.storage.local.set({ rules: newRules });
-
+    await chrome.storage.local.set({ rules: rules.filter((r) => r.id !== id) });
     await render();
-
-    // If it WAS enabled, we might have blocked the current page -> reload to restore
-    if (deletedRule.enabled) {
-      await reloadActiveTab();
-    }
-
+    if (deleted.enabled) await reloadActiveTab();
     return;
   }
 
-  // TOGGLE (switch)
   if (switchBox) {
     const id = switchBox.dataset.id;
+    const current = rules.find((r) => r.id === id);
+    if (!current) return;
 
-    // Find current rule so we know its old state
-    const currentRule = rules.find((r) => r.id === id);
-    if (!currentRule) return; // safety
-
-    const newEnabled = !currentRule.enabled;
-
-    // Update rule in-place (immutably) while keeping the order
     const newRules = rules.map((r) =>
-      r.id === id ? { ...r, enabled: newEnabled } : r
+      r.id === id ? { ...r, enabled: !r.enabled } : r
     );
-
     await chrome.storage.local.set({ rules: newRules });
-
     await render();
-
     await reloadActiveTab();
   }
 });
 
-// if current tab is active then unblock it (reload)
+// ---- Helpers ----
+
 async function reloadActiveTab() {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  if (!tab?.id) return;
-
-  chrome.tabs.reload(tab.id);
+  if (tab?.id) chrome.tabs.reload(tab.id);
 }
 
-// output rule list
 async function render() {
   const { rules } = await chrome.storage.local.get({ rules: [] });
 
   if (rules.length === 0) {
-    ruleList.innerHTML = "<li>The list is currently empty!</li>";
+    ruleList.innerHTML = `<li class="empty-state"># no rules yet. add one above.</li>`;
   } else {
     ruleList.innerHTML = rules
       .map(
         (rule) => `
-      <li class="rule-item">
-        <span class="rule-text" title="${rule.value}" tabindex="0">${
-          rule.value
-        }</span>
-
-        <div class="rule-mid">
-          <label class="switch">
-            <input type="checkbox" class="switch-box" data-id="${rule.id}" ${
-          rule.enabled ? "checked" : ""
-        } />
-            <span class="slider"></span>
-          </label>
-          <span class="rule-type">${rule.type}</span>
-        </div>
-
-        <button data-id="${
-          rule.id
-        }" class="delete-btn" title="Delete">✕</button>
-      </li>
-    `
+      <li class="rule-item${rule.enabled ? "" : " off"}">
+        <span class="rule-text" title="${rule.value}">${rule.value}</span>
+        <span class="rule-type">${rule.type}</span>
+        <label class="switch" title="${rule.enabled ? "Disable" : "Enable"} rule">
+          <input
+            type="checkbox"
+            class="switch-box"
+            data-id="${rule.id}"
+            ${rule.enabled ? "checked" : ""}
+            aria-label="Toggle ${rule.value}"
+          />
+          <span class="slider"></span>
+        </label>
+        <button data-id="${rule.id}" class="delete-btn" title="Delete rule">rm</button>
+      </li>`
       )
       .join("");
   }
+
+  updateCounts(rules);
+}
+
+function updateCounts(rules) {
+  const active = rules.filter((r) => r.enabled).length;
+  activeCountEl.textContent = `${active} active`;
+  ruleCountEl.textContent   = `# ${rules.length} rule${rules.length === 1 ? "" : "s"}`;
 }
 
 async function initTheme() {
-  const { [THEME_KEY]: storedTheme } = await chrome.storage.local.get({
-    [THEME_KEY]: DEFAULT_THEME,
-  });
-  applyTheme(storedTheme);
+  const { [THEME_KEY]: stored } = await chrome.storage.local.get({ [THEME_KEY]: DEFAULT_THEME });
+  applyTheme(stored);
 }
 
 function applyTheme(theme) {
   document.documentElement.dataset.theme = theme;
+  const icon = document.querySelector(".theme-icon");
+  if (icon) icon.textContent = theme === "dark" ? "◑" : "◐";
 }
 
-// add to chrome storage
+function setStatus(message, type) {
+  statusPara.textContent = message;
+  statusPara.className   = type === "error" ? "status-error" : "status-ok";
+}
+
+function clearStatus() {
+  statusPara.textContent = "";
+  statusPara.className   = "";
+}
+
 async function addToStorage(newRule) {
   const { rules } = await chrome.storage.local.get({ rules: [] });
-  if (
-    // applies callback to each item, once the first element is truthful, it automatically stops and returns true
-    rules.some(
-      (existingRule) =>
-        existingRule.type === newRule.type &&
-        existingRule.value === newRule.value
-    )
-  ) {
-    statusPara.textContent = "Already in the list.";
+  const exists = rules.some(
+    (r) => r.type === newRule.type && r.value === newRule.value
+  );
+  if (exists) {
+    setStatus("already in the list", "error");
     return false;
   }
   await chrome.storage.local.set({ rules: [...rules, newRule] });
@@ -171,75 +155,34 @@ async function addToStorage(newRule) {
 }
 
 function validate(raw) {
+  const trimmed = raw.trim();
+  if (!trimmed) return { ok: false, error: "enter a domain or url" };
+
   let url;
-  let urlType;
-  let value;
-  let hostname;
-  let pathname;
+  const withScheme = trimmed.startsWith("http://") || trimmed.startsWith("https://")
+    ? trimmed
+    : `https://${trimmed}`;
 
-  // trim
-  let newInput = raw.trim();
-
-  // check if empty
-  if (!newInput) {
-    return { ok: false, error: "Enter a domain or URL." };
+  try {
+    url = new URL(withScheme);
+  } catch {
+    return { ok: false, error: "url is incorrect" };
   }
 
-  // add URL check
-  if (newInput.startsWith("http://") || newInput.startsWith("https://")) {
-    try {
-      url = new URL(newInput);
-    } catch (e) {
-      return { ok: false, error: "URL is incorrect" };
-    }
-  } else {
-    try {
-      url = new URL(`https://${newInput}`);
-    } catch (e) {
-      return { ok: false, error: "URL is incorrect" };
-    }
-  }
-
-  // allow only https or http
   if (url.protocol !== "http:" && url.protocol !== "https:") {
-    return { ok: false, error: "Only http and https is supported" };
+    return { ok: false, error: "only http and https supported" };
   }
-
-  // check if hostname exists
   if (!url.hostname) {
-    return { ok: false, error: "Please include a website name." };
+    return { ok: false, error: "include a website name" };
   }
 
-  // to lower case
-  hostname = url.hostname.toLowerCase();
+  let hostname = url.hostname.toLowerCase().replace(/^www\./, "");
 
-  // delete www. before the string
-  hostname = hostname.replace(/^www\./, "");
-
-  // check if url or domain
   if (url.pathname !== "/" || url.search !== "") {
-    urlType = "url";
-
-    pathname = url.pathname;
-
-    // deal with trailing /
-    if (url.pathname !== "/" || url.search !== "") {
-      pathname = pathname.replace(/\/+$/, "");
-    }
-
-    value = url.origin + pathname + url.search;
-  } else {
-    urlType = "domain";
-    value = hostname;
+    let pathname = url.pathname.replace(/\/+$/, "");
+    const value = url.origin + pathname + url.search;
+    return { ok: true, rule: { id: crypto.randomUUID(), type: "url", value, enabled: true } };
   }
 
-  return {
-    ok: true,
-    rule: {
-      id: crypto.randomUUID(),
-      type: urlType,
-      value: value,
-      enabled: true,
-    },
-  };
+  return { ok: true, rule: { id: crypto.randomUUID(), type: "domain", value: hostname, enabled: true } };
 }

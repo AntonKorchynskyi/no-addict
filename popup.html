@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -8,36 +8,42 @@
   </head>
 
   <body>
-    <div class="headerDiv">
-      <h1>No Addict</h1>
-      <button
-        type="button"
-        id="themeToggle"
-        class="theme-toggle"
-        aria-label="Toggle theme"
-        title="Toggle theme"
-      >
-        <img
-          src="assets/theme-toggle.svg"
-          class="theme-icon"
-          alt=""
-          aria-hidden="true"
-        />
-      </button>
-    </div>
+    <header class="head">
+      <h1 class="wordmark">no-addict<span class="cursor" aria-hidden="true"></span></h1>
+      <div class="head-right">
+        <div class="status" aria-live="polite">
+          <span class="dot" aria-hidden="true"></span>
+          <span id="activeCount">0 active</span>
+        </div>
+        <button
+          type="button"
+          id="themeToggle"
+          class="theme-toggle"
+          aria-label="Toggle theme"
+          title="Toggle theme"
+        >
+          <span class="theme-icon" aria-hidden="true">◐</span>
+        </button>
+      </div>
+    </header>
 
-    <hr />
-
+    <p class="comment"># add a domain or url to block</p>
     <form>
-      <label><input type="text" id="ruleInput" required /></label>
+      <label class="field-wrap">
+        <input type="text" id="ruleInput" required autocomplete="off" spellcheck="false" placeholder="youtube.com or https://site.com/path" />
+      </label>
       <button type="submit" id="submit-btn">Add</button>
     </form>
 
-    <p id="status"></p>
+    <p id="status" role="status"></p>
 
-    <div>
-      <ul id="ruleList"></ul>
-    </div>
+    <p class="comment"># rules</p>
+    <ul id="ruleList"></ul>
+
+    <footer class="footer">
+      <span id="ruleCount"># 0 rules</span>
+      <span id="version">v1.0</span>
+    </footer>
 
     <script src="scripts/popup.js" type="module"></script>
   </body>

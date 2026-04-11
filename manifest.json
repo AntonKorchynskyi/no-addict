@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "No Addict",
   "version": "1.0",
-  "description": "Provide a simple way to delete html on pages you do not want to see anymore",
+  "description": "Block distracting websites by domain or URL. Toggle rules on and off without deleting them.",
   "action": {
     "default_popup": "popup.html"
   },
@@ -13,6 +13,12 @@
       "matches": ["<all_urls>"],
       "js": ["scripts/content.js"],
       "run_at": "document_start"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["popup.css", "assets/fonts/*"],
+      "matches": ["<all_urls>"]
     }
   ]
 }

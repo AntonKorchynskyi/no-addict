@@ -17,20 +17,30 @@ function ensureDomContentLoaded(cb) {
 }
 
 function applyBlock(rule) {
-  ensureDomContentLoaded(() => {
+  ensureDomContentLoaded(async () => {
     if (document.getElementById(BLOCK_MARKER_ID)) return;
+
+    // Propagate user's theme preference to the blocked page
+    const { theme } = await chrome.storage.local.get({ theme: "light" });
+    document.documentElement.dataset.theme = theme;
 
     document.body.classList.add("noaddict-blocked");
     document.body.innerHTML = `
       <link rel="stylesheet" href="${chrome.runtime.getURL("popup.css")}" />
       <div id="${BLOCK_MARKER_ID}" class="na-blocked">
         <div class="na-blocked-card">
-          <h1 class="na-blocked-title">This page is blocked</h1>
-          <p class="na-blocked-copy">No Addict replaced this page so you can stay on track. You can adjust your rules from the extension popup.</p>
-          <div class="na-blocked-rule">
-            <span class="na-blocked-label">Matched rule: </span>
-            <span class="na-blocked-value">${rule.value}</span>
+          <p class="na-blocked-prompt">check-focus.sh --url ${escHtml(location.href)}</p>
+          <div class="na-blocked-err">
+            <span class="dot"></span>Access denied
           </div>
+          <h1 class="na-blocked-title">page blocked<span class="cursor" aria-hidden="true"></span></h1>
+          <p class="na-blocked-copy">No Addict intercepted this request. You told past-you not to open this — past-you is looking out for present-you.</p>
+          <p class="na-blocked-label">Matched rule</p>
+          <div class="na-blocked-rule">
+            <span class="na-blocked-value">${escHtml(rule.value)}</span>
+            <span class="na-blocked-tag">${escHtml(rule.type)}</span>
+          </div>
+          <p class="na-blocked-hint">toggle the rule from the extension popup to allow this site</p>
         </div>
       </div>
     `;
@@ -105,4 +115,12 @@ async function shouldBlock() {
 async function getRules() {
   const { rules } = await chrome.storage.local.get({ rules: [] });
   return rules;
+}
+
+function escHtml(s) {
+  return String(s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }
