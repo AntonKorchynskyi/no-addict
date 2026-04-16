@@ -104,9 +104,3 @@ no-addict/
 - [ ] Import / export rules as JSON
 - [ ] Confirmation dialog before deleting a rule
 - [ ] Keyboard shortcut to open popup
-
----
-
-## License
-
-MIT
