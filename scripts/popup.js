@@ -1,13 +1,13 @@
-const ruleList   = document.getElementById("ruleList");
-const form       = document.querySelector("form");
-const input      = document.getElementById("ruleInput");
+const ruleList = document.getElementById("ruleList");
+const form = document.querySelector("form");
+const input = document.getElementById("ruleInput");
 const statusPara = document.getElementById("status");
 const themeToggle = document.getElementById("themeToggle");
 const activeCountEl = document.getElementById("activeCount");
-const ruleCountEl   = document.getElementById("ruleCount");
-const versionEl     = document.getElementById("version");
+const ruleCountEl = document.getElementById("ruleCount");
+const versionEl = document.getElementById("version");
 
-const THEME_KEY    = "theme";
+const THEME_KEY = "theme";
 const DEFAULT_THEME = "light";
 
 // Init
@@ -37,7 +37,8 @@ form.addEventListener("submit", async (e) => {
 
 // ---- Theme toggle ----
 themeToggle.addEventListener("click", async () => {
-  const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+  const next =
+    document.documentElement.dataset.theme === "dark" ? "light" : "dark";
   await chrome.storage.local.set({ [THEME_KEY]: next });
   applyTheme(next);
 });
@@ -68,7 +69,7 @@ ruleList.addEventListener("click", async (e) => {
     if (!current) return;
 
     const newRules = rules.map((r) =>
-      r.id === id ? { ...r, enabled: !r.enabled } : r
+      r.id === id ? { ...r, enabled: !r.enabled } : r,
     );
     await chrome.storage.local.set({ rules: newRules });
     await render();
@@ -106,7 +107,7 @@ async function render() {
           <span class="slider"></span>
         </label>
         <button data-id="${rule.id}" class="delete-btn" title="Delete rule">rm</button>
-      </li>`
+      </li>`,
       )
       .join("");
   }
@@ -117,11 +118,13 @@ async function render() {
 function updateCounts(rules) {
   const active = rules.filter((r) => r.enabled).length;
   activeCountEl.textContent = `${active} active`;
-  ruleCountEl.textContent   = `# ${rules.length} rule${rules.length === 1 ? "" : "s"}`;
+  ruleCountEl.textContent = `# ${rules.length} rule${rules.length === 1 ? "" : "s"}`;
 }
 
 async function initTheme() {
-  const { [THEME_KEY]: stored } = await chrome.storage.local.get({ [THEME_KEY]: DEFAULT_THEME });
+  const { [THEME_KEY]: stored } = await chrome.storage.local.get({
+    [THEME_KEY]: DEFAULT_THEME,
+  });
   applyTheme(stored);
 }
 
@@ -133,18 +136,18 @@ function applyTheme(theme) {
 
 function setStatus(message, type) {
   statusPara.textContent = message;
-  statusPara.className   = type === "error" ? "status-error" : "status-ok";
+  statusPara.className = type === "error" ? "status-error" : "status-ok";
 }
 
 function clearStatus() {
   statusPara.textContent = "";
-  statusPara.className   = "";
+  statusPara.className = "";
 }
 
 async function addToStorage(newRule) {
   const { rules } = await chrome.storage.local.get({ rules: [] });
   const exists = rules.some(
-    (r) => r.type === newRule.type && r.value === newRule.value
+    (r) => r.type === newRule.type && r.value === newRule.value,
   );
   if (exists) {
     setStatus("already in the list", "error");
@@ -159,9 +162,10 @@ function validate(raw) {
   if (!trimmed) return { ok: false, error: "enter a domain or url" };
 
   let url;
-  const withScheme = trimmed.startsWith("http://") || trimmed.startsWith("https://")
-    ? trimmed
-    : `https://${trimmed}`;
+  const withScheme =
+    trimmed.startsWith("http://") || trimmed.startsWith("https://")
+      ? trimmed
+      : `https://${trimmed}`;
 
   try {
     url = new URL(withScheme);
@@ -181,8 +185,19 @@ function validate(raw) {
   if (url.pathname !== "/" || url.search !== "") {
     let pathname = url.pathname.replace(/\/+$/, "");
     const value = url.origin + pathname + url.search;
-    return { ok: true, rule: { id: crypto.randomUUID(), type: "url", value, enabled: true } };
+    return {
+      ok: true,
+      rule: { id: crypto.randomUUID(), type: "url", value, enabled: true },
+    };
   }
 
-  return { ok: true, rule: { id: crypto.randomUUID(), type: "domain", value: hostname, enabled: true } };
+  return {
+    ok: true,
+    rule: {
+      id: crypto.randomUUID(),
+      type: "domain",
+      value: hostname,
+      enabled: true,
+    },
+  };
 }

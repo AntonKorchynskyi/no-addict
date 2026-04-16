@@ -13,6 +13,9 @@ Add a domain or URL, toggle it on, and No Addict replaces that page with a clean
   &nbsp;&nbsp;
   <img src="assets/dark-mode-screenshot.jpg" alt="Popup — dark theme" width="380">
 </p>
+<p align="center">
+<img src="assets/blocked-page-screenshot.jpg" alt="Blocked page" width="700">
+</p>
 
 ---
 
@@ -42,13 +45,13 @@ Chrome Web Store distribution is not set up yet. Load it unpacked:
 
 ## Usage
 
-| Action | How |
-|--------|-----|
-| Block a domain | Type `reddit.com` → **Add** |
+| Action                | How                         |
+| --------------------- | --------------------------- |
+| Block a domain        | Type `reddit.com` → **Add** |
 | Block a specific page | Type the full URL → **Add** |
-| Pause a rule | Toggle the switch off |
-| Remove a rule | Click **rm** |
-| Switch theme | Click the `◐ / ◑` button |
+| Pause a rule          | Toggle the switch off       |
+| Remove a rule         | Click **rm**                |
+| Switch theme          | Click the `◐ / ◑` button    |
 
 ---
 
@@ -71,13 +74,13 @@ The content script runs **before** the page renders (`document_start`), so block
 
 ## Tech stack
 
-| | |
-|---|---|
-| Runtime | Chrome Extension Manifest V3 |
-| Language | Vanilla JavaScript (ES modules) |
-| Storage | `chrome.storage.local` |
-| Fonts | JetBrains Mono (bundled woff2, no network request) |
-| Build | None — load directly as unpacked extension |
+|          |                                                    |
+| -------- | -------------------------------------------------- |
+| Runtime  | Chrome Extension Manifest V3                       |
+| Language | Vanilla JavaScript (ES modules)                    |
+| Storage  | `chrome.storage.local`                             |
+| Fonts    | JetBrains Mono (bundled woff2, no network request) |
+| Build    | None — load directly as unpacked extension         |
 
 ---
 
